@@ -1,0 +1,335 @@
+"""
+SALA VIP - SERVIDOR COMPLETO E À PROVA DE FALHAS
+"""
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import os
+import re
+
+app = Flask(__name__, static_folder='.', static_url_path='')
+CORS(app)
+
+# ============================================================
+# BANCO DE DADOS (60 gírias)
+# ============================================================
+BANCO = [
+    {"expressao": "égua", "regiao": "Norte", "significado": "espanto, admiração", "exemplo": "Égua, que calor!", "peso": 98},
+    {"expressao": "boró", "regiao": "Norte", "significado": "dinheiro", "exemplo": "Tô sem boró", "peso": 95},
+    {"expressao": "leso", "regiao": "Norte", "significado": "lerdo, bobo", "exemplo": "Não seja leso", "peso": 76},
+    {"expressao": "gaiato", "regiao": "Norte", "significado": "engraçado", "exemplo": "Esse menino é gaiato", "peso": 70},
+    {"expressao": "de rocha", "regiao": "Norte", "significado": "de verdade", "exemplo": "Vou de rocha", "peso": 65},
+    {"expressao": "oxe", "regiao": "Nordeste", "significado": "espanto, surpresa", "exemplo": "Oxe, cadê meu pedido?", "peso": 99},
+    {"expressao": "visse", "regiao": "Nordeste", "significado": "viu? entendeu?", "exemplo": "Ficou pronto, visse?", "peso": 97},
+    {"expressao": "arretado", "regiao": "Nordeste", "significado": "muito bom, brabo", "exemplo": "Preço arretado de bom", "peso": 94},
+    {"expressao": "mainha", "regiao": "Nordeste", "significado": "minha mãe", "exemplo": "Mainha vai amar", "peso": 88},
+    {"expressao": "aperreado", "regiao": "Nordeste", "significado": "agoniado, apressado", "exemplo": "Tô aperreada", "peso": 82},
+    {"expressao": "perrengue", "regiao": "Nordeste", "significado": "dificuldade, sufoco", "exemplo": "Tô no perrengue", "peso": 81},
+    {"expressao": "resenha", "regiao": "Nordeste", "significado": "conversa boa", "exemplo": "Teve resenha na loja", "peso": 86},
+    {"expressao": "mangar", "regiao": "Nordeste", "significado": "tirar sarro", "exemplo": "Para de mangar", "peso": 69},
+    {"expressao": "fuleiragem", "regiao": "Nordeste", "significado": "besteira", "exemplo": "Isso é fuleiragem", "peso": 60},
+    {"expressao": "mói", "regiao": "Nordeste", "significado": "muito, um monte", "exemplo": "Tinha mói de gente", "peso": 75},
+    {"expressao": "bocada", "regiao": "Nordeste", "significado": "oportunidade", "exemplo": "Fiz uma bocada", "peso": 68},
+    {"expressao": "tabacudo", "regiao": "Nordeste", "significado": "bobo, lerdo", "exemplo": "Esse cabra é tabacudo", "peso": 62},
+    {"expressao": "liso", "regiao": "Nordeste", "significado": "sem dinheiro", "exemplo": "Tô liso", "peso": 77},
+    {"expressao": "cabra", "regiao": "Nordeste", "significado": "cara, sujeito", "exemplo": "Aquele cabra é trabalhador", "peso": 73},
+    {"expressao": "bah", "regiao": "Sul", "significado": "espanto, nossa", "exemplo": "Bah, que frio!", "peso": 96},
+    {"expressao": "tri", "regiao": "Sul", "significado": "muito, super", "exemplo": "Tri bonita", "peso": 93},
+    {"expressao": "guri", "regiao": "Sul", "significado": "menino", "exemplo": "Os guri mandaram bem", "peso": 85},
+    {"expressao": "piá", "regiao": "Sul", "significado": "menino (PR)", "exemplo": "Esse piá é filho da vizinha", "peso": 78},
+    {"expressao": "capaz", "regiao": "Sul", "significado": "duvida, claro que não", "exemplo": "Capaz que vou perder", "peso": 90},
+    {"expressao": "de buenas", "regiao": "Sul", "significado": "tranquilo", "exemplo": "Tô de buenas", "peso": 84},
+    {"expressao": "sinaleira", "regiao": "Sul", "significado": "semáforo", "exemplo": "Para na sinaleira", "peso": 70},
+    {"expressao": "cacetinho", "regiao": "Sul", "significado": "pão francês", "exemplo": "Me vê um cacetinho", "peso": 67},
+    {"expressao": "barbaridade", "regiao": "Sul", "significado": "espanto", "exemplo": "Barbaridade, que chuva!", "peso": 72},
+    {"expressao": "atucanado", "regiao": "Sul", "significado": "irritado", "exemplo": "Tô atucanado", "peso": 66},
+    {"expressao": "lagartear", "regiao": "Sul", "significado": "ficar à toa", "exemplo": "Domingo é pra lagartear", "peso": 63},
+    {"expressao": "tchê", "regiao": "Sul", "significado": "parceiro", "exemplo": "Tchê, me ajuda", "peso": 80},
+    {"expressao": "pila", "regiao": "Sul", "significado": "dinheiro", "exemplo": "Tô sem pila", "peso": 74},
+    {"expressao": "mano", "regiao": "Sudeste", "significado": "amigo, irmão", "exemplo": "Mano, tô sem boró", "peso": 100},
+    {"expressao": "trampo", "regiao": "Sudeste", "significado": "trabalho", "exemplo": "Tô no trampo", "peso": 96},
+    {"expressao": "rolê", "regiao": "Sudeste", "significado": "passeio", "exemplo": "Bora dar um rolê", "peso": 89},
+    {"expressao": "da hora", "regiao": "Sudeste", "significado": "legal, massa", "exemplo": "Kit da hora", "peso": 87},
+    {"expressao": "suave", "regiao": "Sudeste", "significado": "tranquilo", "exemplo": "Suave? Já enviei", "peso": 92},
+    {"expressao": "caô", "regiao": "Sudeste", "significado": "mentira", "exemplo": "Isso é caô", "peso": 75},
+    {"expressao": "parça", "regiao": "Sudeste", "significado": "parceiro", "exemplo": "Valeu parça", "peso": 83},
+    {"expressao": "trem", "regiao": "Sudeste", "significado": "coisa, negócio", "exemplo": "Que trem barato", "peso": 80},
+    {"expressao": "uai", "regiao": "Sudeste", "significado": "espanto (MG)", "exemplo": "Uai, sô!", "peso": 78},
+    {"expressao": "sô", "regiao": "Sudeste", "significado": "senhor, cara", "exemplo": "Sô, me ajuda", "peso": 76},
+    {"expressao": "bolado", "regiao": "Sudeste", "significado": "chateado", "exemplo": "Fiquei bolado", "peso": 71},
+    {"expressao": "perreco", "regiao": "Sudeste", "significado": "problema", "exemplo": "Dando perreco", "peso": 64},
+    {"expressao": "zica", "regiao": "Sudeste", "significado": "ruim ou bom", "exemplo": "Tá zica de bom", "peso": 70},
+    {"expressao": "talarico", "regiao": "Sudeste", "significado": "traíra", "exemplo": "Sai fora, talarico", "peso": 68},
+    {"expressao": "partiu", "regiao": "Geral", "significado": "vamos embora", "exemplo": "Partiu vender", "peso": 88},
+    {"expressao": "lacrar", "regiao": "Geral", "significado": "arrasar", "exemplo": "Você lacrou", "peso": 84},
+    {"expressao": "correria", "regiao": "Geral", "significado": "rotina puxada", "exemplo": "Tô na correria", "peso": 82},
+    {"expressao": "ralo", "regiao": "Geral", "significado": "trabalho pesado", "exemplo": "Ralei o dia todo", "peso": 79},
+    {"expressao": "pindaíba", "regiao": "Geral", "significado": "sem dinheiro", "exemplo": "Tô na pindaíba", "peso": 77},
+    {"expressao": "muquifo", "regiao": "Geral", "significado": "lugar feio", "exemplo": "Moro num muquifo", "peso": 65},
+    {"expressao": "morgado", "regiao": "Geral", "significado": "sem ânimo", "exemplo": "Tô morgado", "peso": 71},
+    {"expressao": "na faixa", "regiao": "Geral", "significado": "de graça", "exemplo": "Consegui na faixa", "peso": 73},
+    {"expressao": "deu ruim", "regiao": "Geral", "significado": "deu errado", "exemplo": "Deu ruim na entrega", "peso": 85},
+    {"expressao": "bater perna", "regiao": "Geral", "significado": "andar muito", "exemplo": "Bati perna o dia todo", "peso": 78},
+    {"expressao": "fazer um bico", "regiao": "Geral", "significado": "trabalho extra", "exemplo": "Fazendo um bico", "peso": 74},
+    {"expressao": "enrolado", "regiao": "Geral", "significado": "endividado", "exemplo": "Tô enrolado", "peso": 72},
+    {"expressao": "dar um corre", "regiao": "Geral", "significado": "resolver", "exemplo": "Vou dar um corre", "peso": 81},
+    {"expressao": "ralar peito", "regiao": "Geral", "significado": "trabalhar muito", "exemplo": "Ralei peito", "peso": 76},
+]
+
+# ============================================================
+# FUNÇÕES
+# ============================================================
+def analisar_frase(frase):
+    frase_lower = frase.lower()
+    encontradas = []
+    for item in sorted(BANCO, key=lambda x: len(x.get('expressao', '')), reverse=True):
+        expr = item.get('expressao', '').lower()
+        if expr and re.search(r'\b' + re.escape(expr) + r'\b', frase_lower):
+            encontradas.append(item)
+    return encontradas
+
+# ============================================================
+# ROTAS
+# ============================================================
+@app.route('/')
+def index():
+    if os.path.exists('index.html'):
+        return send_from_directory('.', 'index.html')
+    return HTML_COMPLETO, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+@app.route('/api/stats')
+def stats():
+    regioes = list(set(item['regiao'] for item in BANCO))
+    return jsonify({
+        "total_palavras": len(BANCO),
+        "regioes": len(regioes),
+        "status": "online"
+    })
+
+@app.route('/api/top')
+def top():
+    n = int(request.args.get('n', 8))
+    top_girias = sorted(BANCO, key=lambda x: x.get('peso', 0), reverse=True)[:n]
+    return jsonify({"top": top_girias})
+
+@app.route('/api/dicionario')
+def dicionario():
+    termo = request.args.get('termo', '').lower()
+    regiao = request.args.get('regiao', 'Todas')
+    resultado = BANCO
+    if regiao != 'Todas':
+        resultado = [d for d in resultado if d['regiao'] == regiao]
+    if termo:
+        resultado = [d for d in resultado if termo in d['expressao'].lower() or termo in d['significado'].lower()]
+    return jsonify({"dados": resultado, "total": len(resultado)})
+
+@app.route('/api/analisar', methods=['POST'])
+def analisar():
+    dados = request.get_json()
+    frase = dados.get('frase', '')
+    encontradas = analisar_frase(frase)
+    return jsonify({
+        "girias": encontradas,
+        "total": len(encontradas),
+        "frase_original": frase
+    })
+
+# ============================================================
+# HTML COMPLETO EMBUTIDO (funciona mesmo sem index.html)
+# ============================================================
+HTML_COMPLETO = """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala VIP - IA Regional</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+body { background: #f5f0ff; color: #1a0a2e; padding: 20px; }
+.container { max-width: 900px; margin: 0 auto; }
+header { background: white; padding: 20px; border-radius: 16px; border: 2px solid #d8b4fe; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+.logo { font-size: 24px; font-weight: 900; color: #7c1dff; }
+.status { background: #f5e9ff; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; }
+.hero { background: linear-gradient(135deg, #7c1dff, #ff2d8f); color: white; padding: 40px; border-radius: 20px; margin-bottom: 20px; }
+.hero h1 { font-size: 36px; margin-bottom: 10px; }
+.hero p { font-size: 18px; opacity: 0.9; }
+.analyzer { background: white; padding: 30px; border-radius: 20px; border: 2px solid #d8b4fe; margin-bottom: 20px; }
+.analyzer h2 { color: #7c1dff; margin-bottom: 15px; }
+textarea { width: 100%; min-height: 100px; padding: 15px; border: 2px solid #d8b4fe; border-radius: 12px; font-size: 16px; resize: vertical; }
+textarea:focus { outline: none; border-color: #7c1dff; }
+.btn { background: #7c1dff; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; margin-right: 10px; }
+.btn:hover { background: #6d28e0; }
+.btn-clear { background: #ff2d8f; }
+.resultado { background: #160a27; color: white; padding: 20px; border-radius: 12px; margin-top: 20px; display: none; }
+.resultado.ativo { display: block; }
+.giria-card { background: #f5e9ff; border: 2px solid #d8b4fe; padding: 15px; border-radius: 12px; margin-top: 10px; }
+.giria-card b { color: #7c1dff; font-size: 18px; }
+.regiao-tag { background: #7c1dff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 10px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.stat-card { background: white; padding: 20px; border-radius: 16px; border: 2px solid #d8b4fe; text-align: center; }
+.stat-card .numero { font-size: 36px; font-weight: 900; color: #7c1dff; }
+.stat-card .label { font-size: 12px; color: #6b5a8a; font-weight: 700; text-transform: uppercase; }
+.dicionario { background: white; padding: 30px; border-radius: 20px; border: 2px solid #d8b4fe; }
+.dicionario h2 { color: #7c1dff; margin-bottom: 15px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; }
+.item { background: #f5e9ff; padding: 12px; border-radius: 10px; border: 2px solid #d8b4fe; }
+.item b { color: #7c1dff; }
+.item small { color: #6b5a8a; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<div class="logo"> Lojinha Shop</div>
+<div class="status" id="status">Carregando...</div>
+</header>
+
+<div class="hero">
+<h1>Sala VIP - IA Regional</h1>
+<p>Teste o dicionário do povão em tempo real. Digite uma frase e veja a mágica acontecer!</p>
+</div>
+
+<div class="stats">
+<div class="stat-card">
+<div class="numero" id="totalGirias">-</div>
+<div class="label">Total de Gírias</div>
+</div>
+<div class="stat-card">
+<div class="numero" id="totalRegioes">-</div>
+<div class="label">Regiões</div>
+</div>
+<div class="stat-card">
+<div class="numero">✅</div>
+<div class="label">Status Online</div>
+</div>
+</div>
+
+<div class="analyzer">
+<h2>✍️ Teste sua frase</h2>
+<textarea id="fraseInput" placeholder="Ex: mano tô sem boró, deu ruim no trampo, bah visse?">mano tô sem boró, deu ruim</textarea>
+<br>
+<button class="btn" onclick="analisar()">🔍 Analisar Frase</button>
+<button class="btn btn-clear" onclick="limpar()">🗑️ Limpar</button>
+
+<div class="resultado" id="resultado">
+<h3>🎯 Gírias detectadas: <span id="contador">0</span></h3>
+<div id="listaGirias"></div>
+</div>
+</div>
+
+<div class="dicionario">
+<h2>📚 Dicionário Completo</h2>
+<input type="text" id="busca" placeholder="Buscar gíria..." style="width:100%;padding:10px;border:2px solid #d8b4fe;border-radius:10px;margin-bottom:15px;font-size:14px" oninput="filtrar()">
+<div class="grid" id="gridDicionario"></div>
+</div>
+</div>
+
+<script>
+let bancoCompleto = [];
+
+async function carregarStats() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('totalGirias').textContent = data.total_palavras;
+        document.getElementById('totalRegioes').textContent = data.regioes;
+        document.getElementById('status').textContent = '🟢 IA Online • ' + data.total_palavras + ' palavras';
+    } catch(e) {
+        document.getElementById('status').textContent = '❌ Erro de conexão';
+    }
+}
+
+async function carregarDicionario() {
+    try {
+        const res = await fetch('/api/dicionario');
+        const data = await res.json();
+        bancoCompleto = data.dados;
+        renderizarDicionario(bancoCompleto);
+    } catch(e) {
+        console.error('Erro:', e);
+    }
+}
+
+function renderizarDicionario(dados) {
+    const grid = document.getElementById('gridDicionario');
+    grid.innerHTML = dados.map(item => `
+        <div class="item">
+            <b>${item.expressao}</b> <small>(${item.regiao})</small>
+            <div style="margin-top:5px;font-size:14px">${item.significado}</div>
+            <div style="margin-top:5px;font-size:12px;color:#6b5a8a;font-style:italic">"${item.exemplo}"</div>
+        </div>
+    `).join('');
+}
+
+function filtrar() {
+    const termo = document.getElementById('busca').value.toLowerCase();
+    const filtrados = bancoCompleto.filter(item => 
+        item.expressao.toLowerCase().includes(termo) || 
+        item.significado.toLowerCase().includes(termo)
+    );
+    renderizarDicionario(filtrados);
+}
+
+async function analisar() {
+    const frase = document.getElementById('fraseInput').value;
+    if (!frase.trim()) {
+        alert('Digite uma frase primeiro!');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/analisar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({frase})
+        });
+        const data = await res.json();
+        
+        const resultado = document.getElementById('resultado');
+        const contador = document.getElementById('contador');
+        const lista = document.getElementById('listaGirias');
+        
+        resultado.classList.add('ativo');
+        contador.textContent = data.total;
+        
+        if (data.total === 0) {
+            lista.innerHTML = '<p style="color:#ffef5e">Nenhuma gíria detectada. Tente: "mano tô sem boró"</p>';
+        } else {
+            lista.innerHTML = data.girias.map(g => `
+                <div class="giria-card">
+                    <b>${g.expressao}</b><span class="regiao-tag">${g.regiao}</span>
+                    <div style="margin-top:8px">${g.significado}</div>
+                    <div style="margin-top:5px;font-size:13px;opacity:0.8">Ex: "${g.exemplo}"</div>
+                </div>
+            `).join('');
+        }
+    } catch(e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+function limpar() {
+    document.getElementById('fraseInput').value = '';
+    document.getElementById('resultado').classList.remove('ativo');
+}
+
+carregarStats();
+carregarDicionario();
+</script>
+</body>
+</html>"""
+
+# ============================================================
+# INICIAR
+# ============================================================
+if __name__ == '__main__':
+    print("\n" + "="*60)
+    print("🚀 SERVIDOR SALA VIP - VERSÃO À PROVA DE FALHAS")
+    print("="*60)
+    print(f"📂 Pasta: {os.getcwd()}")
+    print(f"📚 Gírias: {len(BANCO)}")
+    print(f" index.html existe: {os.path.exists('index.html')}")
+    print("\n🌐 Acesse: http://localhost:5000")
+    print("📊 API: http://localhost:5000/api/stats")
+    print("="*60 + "\n")
+    
+    app.run(host='0.0.0.0', port=5000, debug=True)

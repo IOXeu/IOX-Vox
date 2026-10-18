@@ -1,0 +1,50 @@
+[
+  {
+    "expressao": "égua",
+    "regiao": "Norte",
+    "significado": "espanto",
+    "peso": 98
+  },
+  {
+    "expressao": "boró",
+    "regiao": "Norte",
+    "significado": "dinheiro",
+    "peso": 95
+  },
+  {
+    "expressao": "oxe",
+    "regiao": "Nordeste",
+    "significado": "espanto",
+    "peso": 99
+  },
+  {
+    "expressao": "arretado",
+    "regiao": "Nordeste",
+    "significado": "muito bom",
+    "peso": 94
+  },
+  {
+    "expressao": "mano",
+    "regiao": "Sudeste",
+    "significado": "amigo",
+    "peso": 100
+  },
+  {
+    "expressao": "trampo",
+    "regiao": "Sudeste",
+    "significado": "trabalho",
+    "peso": 96
+  },
+  {
+    "expressao": "bah",
+    "regiao": "Sul",
+    "significado": "espanto",
+    "peso": 96
+  },
+  {
+    "expressao": "tri",
+    "regiao": "Sul",
+    "significado": "muito",
+    "peso": 93
+  }
+]
