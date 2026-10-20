@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ambientes virtuais
+venv/
+env/
+ENV/
+.venv/
+
+# Arquivos sensíveis
+.env
+.env.local
+*.key
+*.pem
+
+# Arquivos temporários e gerados
+temp/
+audios/
+videos/
+*.mp3
+*.mp4
+*.wav
+*.m4a
+
+# Imagens temporárias
+temp_*.jpg
+temp_*.jpeg
+temp_*.png
+temp_*.webp
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
